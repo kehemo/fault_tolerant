@@ -1,0 +1,100 @@
+
+generator bit exp_bool([int nvars, int nconsts], int bnd, int[nvars] vars, int[nconsts] consts) {
+    // generator for boolean expressions in the language
+    assert bnd >= 0;
+    int op_type = ??;
+    if (op_type == 0) {
+        // False
+        return false;
+    } else if (op_type == 1) {
+        // Eq
+        return exp(bnd - 1, vars, consts) == exp(bnd - 1, vars, consts);
+    } else if (op_type == 2) {
+        // And
+        return exp_bool(bnd - 1, vars, consts) && exp_bool(bnd - 1, vars, consts);
+    } else if (op_type == 3) {
+        // Or
+        return exp_bool(bnd - 1, vars, consts) || exp_bool(bnd - 1, vars, consts);
+    } else if (op_type == 4) {
+        // Not
+        return !exp_bool(bnd - 1, vars, consts);
+    } else if (op_type == 5) {
+        // Nop
+        return exp_bool(bnd - 1, vars, consts);
+    } else {
+        assert false;
+    }
+}
+
+generator int exp([int nvars, int nconsts], int bnd, int[nvars] vars, int[nconsts] consts){
+    //In this generator, nvars is the number of variables and nconsts is the number of constants.
+    //the array vars contains the values of all the variables and the array consts of all the constants.
+    //Note that unlike problem 1, where you were generating ASTs, here you are synthesizing the actual function.
+    //Also note that you will probably need a separate generator for the boolean expressions.
+    assert bnd >= 0;
+    int op_type = ??;
+    if (op_type == 0) {
+        // Num
+        int const_idx = ??;
+        assert const_idx >= 0 && const_idx < nconsts;
+        return consts[const_idx];
+    } else if (op_type == 1) {
+        // Var
+        int var_idx = ??;
+        assert var_idx >= 0 && var_idx < nvars;
+        return vars[var_idx];
+    } else {
+        assert false;
+    }
+}
+
+int BOUND = 5;
+
+bit inv__14(int a,int b,int dirty,int r1,int r2,int temp){return true;}
+bit inv__4(int a,int b,int dirty,int r1,int r2,int temp){return (dirty == 0) && ((r1 == a) && (r2 == b)) || ((dirty == 1) && exp_bool(BOUND, {a,b,dirty,r1,r2,temp}, {0, 1}));}
+bit inv__10(int a,int b,int r1,int r2,int temp){return true;}
+
+bit check(int a,int b,int dirty,int dirty__12,int dirty__7,int r1,int r1__13,int r1__8,int r1__9,int r2,int r2__11,int r2__6,int temp,int temp__5) {return!(true) || ((inv__14(a,b,dirty,r1,r2,temp)) && (!(inv__14(a,b,dirty__12,r1__13,r2__11,temp)) || ((inv__14(a,b,dirty__12,a,r2__11,temp)) && ((inv__14(a,b,dirty__12,a,b,temp)) && ((inv__14(a,b,0,a,b,temp)) && (((inv__4(a,b,0,a,b,temp)) && ((inv__4(a,b,0,a,b,a)) && ((inv__4(a,b,1,a,b,a)) && ((inv__4(a,b,1,b,b,a)) && ((inv__4(a,b,1,b,a,a)) && ((((b) == (b)) && ((a) == (a))) && (((((b) == (a)) && ((a) == (b))) || (((b) == (b)) && ((a) == (a)))) && (true)))))))) && (!(inv__4(a,b,dirty__7,r1__8,r2__6,temp__5)) || (((((dirty__7) == (1)) && (! ((r2__6) == (temp__5)))) && ((inv__10(a,b,r1__8,r2__6,temp__5)) && (!(inv__10(a,b,r1__9,r2__6,temp__5)) || ((inv__10(a,b,temp__5,r2__6,temp__5)) && (((((temp__5) == (a)) && ((r2__6) == (b))) || (((temp__5) == (b)) && ((r2__6) == (a)))) && (true)))))) || ((! (((dirty__7) == (1)) && (! ((r2__6) == (temp__5))))) && (((((r1__8) == (a)) && ((r2__6) == (b))) || (((r1__8) == (b)) && ((r2__6) == (a)))) && (true)))))))))));}
+
+harness void experiment() {
+    int[4] garbage = {3, 3, 9, 5};
+for (int a = 0; a < 3; a++){
+for (int b = 0; b < 3; b++){
+int dirty = 0;
+for (int dirty__13 = 0; dirty__13 < 2; dirty__13++){
+for (int dirty__8 = 0; dirty__8 < 2; dirty__8++){
+int r1 = 0;
+for (int r1__11 = 0; r1__11 < 3; r1__11++){
+for (int r1__6 = 0; r1__6 < 3; r1__6++){
+for (int r1__9 = 0; r1__9 < 3; r1__9++){
+int r2 = 0;
+for (int r2__7 = 0; r2__7 < 3; r2__7++){
+for (int r2__6 = 0; r2__6 < 3; r2__6++){
+int temp = 0;
+for (int temp__5 = 0; temp__5 < 3; temp__5++){
+assert check(
+garbage[a],
+garbage[b],
+dirty,
+dirty__13,
+dirty__8,
+r1,
+garbage[r1__11],
+garbage[r1__6],
+garbage[r1__9],
+garbage[r2],
+garbage[r2__7],
+garbage[r2__6],
+temp,
+garbage[temp__5]);
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}

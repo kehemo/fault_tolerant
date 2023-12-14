@@ -1,0 +1,77 @@
+pragma options "--bnd-int-range 200";
+
+int REGS = 3;
+
+struct state {
+    int[REGS] regs;
+}
+
+int BOUND = 4;
+
+|state| madd(int kill, |state| s){
+    int[BOUND] instructions = ??;
+    int[BOUND] op1 = ??;
+    int[BOUND] op2 = ??;
+    int ip = 0;
+    for (int time = 0; time != kill && ip < BOUND; time++) {
+        int op_type = instructions[ip];
+        if (op_type == 0) {
+            // Mov
+            int idx1 = op1[ip];
+            assert idx1 >= 0 && idx1 < REGS;
+            int idx2 = op2[ip];
+            assert idx2 >= 0 && idx2 < REGS;
+            s.regs[idx1] = s.regs[idx2];
+        } else if (op_type == 1) {
+            // Mul
+            int idx = op1[ip];
+            assert idx >= 0 && idx < REGS;
+            int op_idx = op2[ip];
+            assert op_idx >= 0 && op_idx < REGS;
+            s.regs[idx] *= s.regs[op_idx];
+        } else if (op_type == 2) {
+            // Add
+            int idx = op1[ip];
+            assert idx >= 0 && idx < REGS;
+            int op_idx = op2[ip];
+            assert op_idx >= 0 && op_idx < REGS;
+            s.regs[idx] += s.regs[op_idx];
+        } else if (op_type == 3) {
+            // Nop
+        } else {
+            assert false;
+        }
+        ip++;
+    }
+    return s;
+}
+
+void test1([int depth], |state| init, int[depth] m, int[depth] b) {
+    assert depth >= 0;
+    if (depth > 0) {
+        init.regs[1] = m[depth - 1];
+        init.regs[2] = b[depth - 1];
+        for (int killed_idx = 0; killed_idx <= BOUND; killed_idx++) {
+            |state| next = madd(killed_idx, init);
+            int expected = init.regs[0] * init.regs[1] + init.regs[2];
+            if (killed_idx != BOUND) {
+                // fallible
+                assert (next.regs[0] == expected) || (next.regs[0] == init.regs[0]);
+            } else {
+                //infallible
+                assert (next.regs[0] == expected);
+            }
+            test1(next, m[0::(depth - 1)], b[0::(depth - 1)]);
+        }
+    }
+}
+
+harness void experiment1() {
+    |state| s;
+    s = |state|(regs={5, 0, 0});
+    test1(s, {1}, {2});
+    s = |state|(regs={5, 0, 0});
+    test1(s, {3}, {4});
+    s = |state|(regs={7, 0, 0});
+    test1(s, {3, 4}, {4, 9});
+}

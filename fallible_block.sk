@@ -1,0 +1,115 @@
+pragma options "--bnd-unroll-amnt 15";
+
+int OBSERVABLE = 2;
+int REGS = 4;
+
+struct state {
+    int[OBSERVABLE] indices;
+    int[OBSERVABLE] arr;
+    int[REGS] regs;
+}
+
+int BOUND = 7;
+int TIME_BOUND = 15;
+
+|state| push_block(|state| s, int kill) {
+    int[BOUND] instructions = ??;//{0, 2, 1, 3, 3, 4, 0};
+    int[BOUND] op1 = ??;//{1, 2, 3, 1, 3, 1, 0};
+    int[BOUND] op2 = ??;//{0, 0, 1, 0, 0, 2, 2};
+    int[BOUND] op3 = ??;//{0, 0, 0, 0, 0, 2, 0};
+    int ip = 0;
+    for (int time = 0; time < TIME_BOUND && time != kill && ip < BOUND; time++) {
+        int op_type = instructions[ip];
+        int next_ip = ip + 1;
+        if (op_type == 0) {
+            // Mov
+            int idx1 = op1[ip];
+            int idx2 = op2[ip];
+            s.regs[idx1] = s.regs[idx2];
+        } else if (op_type == 1) {
+            // MovInd
+            int idx1 = op1[ip];
+            int val = s.regs[idx1];
+            int idx2 = op2[ip];
+            int ind_idx = s.regs[idx2];
+            for (int a = 0; a < OBSERVABLE; a++) {
+                if (s.indices[a] == ind_idx) {
+                    s.arr[a] = val;
+                }
+            }
+        } else if (op_type == 2) {
+            // Add
+            int idx = op1[ip];
+            int op_idx = op2[ip];
+            s.regs[idx] += s.regs[op_idx];
+        } else if (op_type == 3) {
+            // Inc
+            int idx = op1[ip];
+            s.regs[idx]++;
+        } else if (op_type == 4) {
+            // Ble
+            int idx1 = op1[ip];
+            int idx2 = op2[ip];
+            int nip = op3[ip];
+            assert nip >= 0 && nip < BOUND;
+            if (s.regs[idx1] < s.regs[idx2]) {
+                next_ip = nip;
+            }
+        } else if (op_type == 5) {
+            // Nop
+        } else {
+            assert false;
+        }
+        ip = next_ip;
+    }
+    return s;
+}
+
+void test1([int depth], |state| init, int[depth] lens, int[depth] vals) {
+    assert depth >= 0;
+    if (depth > 0) {
+        init.regs[2] = lens[depth - 1];
+        init.regs[3] = vals[depth - 1];
+        for (int killed_idx = 0; killed_idx <= TIME_BOUND; killed_idx++) {
+            |state| next = push_block(init, killed_idx);
+            for (int a = 0; a < OBSERVABLE; a++) {
+                if (init.indices[a] < init.regs[0]) {
+                    assert next.arr[a] == init.arr[a];
+                }
+            }
+            if (killed_idx < TIME_BOUND) {
+                // fallible
+                if (next.regs[0] == init.regs[0] + init.regs[2]) {
+                    for (int a = 0; a < OBSERVABLE; a++) {
+                        if (init.indices[a] >= init.regs[0] && init.indices[a] < init.regs[0] + init.regs[2]) {
+                            assert next.arr[a] == init.indices[a] - init.regs[0] + init.regs[3];
+                        }
+                    }
+                } else if (next.regs[0] == init.regs[0]) {
+                    assert true;
+                } else {
+                    assert false;
+                }
+            } else {
+                //infallible
+                assert (next.regs[0] == init.regs[0] + init.regs[2]);
+                for (int a = 0; a < OBSERVABLE; a++) {
+                    if (init.indices[a] >= init.regs[0] && init.indices[a] < init.regs[0] + init.regs[2]) {
+                        assert next.arr[a] == init.indices[a] - init.regs[0] + init.regs[3];
+                    }
+                }
+            }
+            test1(next, lens[0::(depth - 1)], vals[0::(depth - 1)]);
+        }
+    }
+}
+
+harness void experiment1() {
+    |state| s;
+    s = |state|(indices={1, 2});
+    test1(s, {3}, {0});
+    s = |state|(indices={1, 3});
+    test1(s, {2, 3}, {3, 1});
+    s = |state|(indices={1, 7});
+    test1(s, {3, 3, 3}, {4, 1, 1});
+}
